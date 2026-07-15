@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { SellerOrder, getAuthToken, getOrders } from "@/lib/api";
+import { ApiError, SellerOrder, completeOrder, getAuthToken, getOrders } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 
 function statusPalette(status: string): string {
@@ -20,6 +21,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasToken, setHasToken] = useState(true);
+  const [savingOrderId, setSavingOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     setHasToken(Boolean(getAuthToken()));
@@ -42,6 +44,31 @@ export default function OrdersPage() {
       mounted = false;
     };
   }, []);
+
+  async function onMarkComplete(orderId: number) {
+    if (savingOrderId != null) return;
+    setSavingOrderId(orderId);
+    setError(null);
+    try {
+      const updatedOrder = await completeOrder(orderId);
+      setOrders((current) =>
+        (current || []).map((order) => (order.id === orderId ? updatedOrder : order)),
+      );
+    } catch (err) {
+      if (err instanceof ApiError && err.isConflict) {
+        setError("Already completed.");
+        setOrders((current) =>
+          (current || []).map((order) =>
+            order.id === orderId ? { ...order, status: "completed" } : order,
+          ),
+        );
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to update order.");
+      }
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -131,10 +158,25 @@ export default function OrdersPage() {
             </ul>
 
             <div className="flex items-center justify-end border-t border-slate-100 pt-2">
-              <span className="text-sm text-slate-500">Total</span>
-              <span className="ml-3 text-lg font-bold text-slate-900">
-                {formatPrice(order.total_price)}
-              </span>
+              <div className="flex flex-1 items-center justify-between gap-3">
+                <div>
+                  <span className="text-sm text-slate-500">Total</span>
+                  <span className="ml-3 text-lg font-bold text-slate-900">
+                    {formatPrice(order.total_price)}
+                  </span>
+                </div>
+                {order.status?.toLowerCase() === "pending" ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={savingOrderId === order.id}
+                    onClick={() => onMarkComplete(order.id)}
+                    className="min-h-[40px] px-3 py-2 text-sm"
+                  >
+                    {savingOrderId === order.id ? "Marking..." : "Mark Complete"}
+                  </Button>
+                ) : null}
+              </div>
             </div>
           </Card>
         ))}

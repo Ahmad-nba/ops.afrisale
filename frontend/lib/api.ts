@@ -30,6 +30,24 @@ export function getAuthToken(): string {
   }
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+
+  get isUnauthorized(): boolean {
+    return this.status === 401;
+  }
+
+  get isConflict(): boolean {
+    return this.status === 409;
+  }
+}
+
 function apiBase(): string {
   if (API_BASE_ENV) return API_BASE_ENV;
   // Fallback for local dev where the FastAPI app runs on :8000 alongside
@@ -68,7 +86,7 @@ export async function callApi<T>(path: string, opts: ApiOptions = {}): Promise<T
     }
     const message =
       detail || `${response.status} ${response.statusText || "Request failed"}`;
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
   if (response.status === 204) {
     return undefined as T;
@@ -112,6 +130,16 @@ export function getCatalogue(): Promise<CatalogueItem[]> {
 
 export function getOrders(): Promise<SellerOrder[]> {
   return callApi<SellerOrder[]>("/api/seller/orders");
+}
+
+export function completeOrder(orderId: number): Promise<SellerOrder> {
+  return callApi<SellerOrder>(`/api/seller/orders/${orderId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "completed" }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }
 
 export function createProduct(form: FormData): Promise<{
