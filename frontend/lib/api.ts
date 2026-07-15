@@ -55,24 +55,18 @@ function apiBase(): string {
   return "http://localhost:8000";
 }
 
-export interface ApiOptions {
-  method?: "GET" | "POST";
-  body?: BodyInit | null;
-  headers?: Record<string, string>;
-}
+export type ApiOptions = Omit<RequestInit, "cache">;
 
 export async function callApi<T>(path: string, opts: ApiOptions = {}): Promise<T> {
   const token = getAuthToken();
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    ...(opts.headers || {}),
-  };
+  const headers = new Headers(opts.headers);
+  headers.set("Accept", "application/json");
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
   }
   const response = await fetch(`${apiBase()}${path}`, {
+    ...opts,
     method: opts.method || "GET",
-    body: opts.body,
     headers,
     cache: "no-store",
   });
