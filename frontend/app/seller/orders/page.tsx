@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { ApiError, SellerOrder, completeOrder, getAuthToken, getOrders } from "@/lib/api";
+import {
+  ApiError,
+  SellerOrder,
+  completeOrder,
+  getAuthToken,
+  getOrders,
+} from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 
 function statusPalette(status: string): string {
@@ -52,7 +58,9 @@ export default function OrdersPage() {
     try {
       const updatedOrder = await completeOrder(orderId);
       setOrders((current) =>
-        (current || []).map((order) => (order.id === orderId ? updatedOrder : order)),
+        (current || []).map((order) =>
+          order.id === orderId ? updatedOrder : order,
+        ),
       );
     } catch (err) {
       if (err instanceof ApiError && err.isConflict) {
@@ -63,7 +71,9 @@ export default function OrdersPage() {
           ),
         );
       } else {
-        setError(err instanceof Error ? err.message : "Failed to update order.");
+        setError(
+          err instanceof Error ? err.message : "Failed to update order.",
+        );
       }
     } finally {
       setSavingOrderId(null);
@@ -92,7 +102,9 @@ export default function OrdersPage() {
         <Card className="text-slate-500">Loading orders...</Card>
       ) : null}
       {error ? (
-        <Card className="border-rose-200 bg-rose-50 text-rose-800">{error}</Card>
+        <Card className="border-rose-200 bg-rose-50 text-rose-800">
+          {error}
+        </Card>
       ) : null}
 
       {orders && orders.length === 0 ? (
@@ -148,7 +160,10 @@ export default function OrdersPage() {
                         ({[it.size, it.color].filter(Boolean).join(", ")})
                       </span>
                     ) : null}
-                    <span className="text-slate-500"> &times; {it.quantity}</span>
+                    <span className="text-slate-500">
+                      {" "}
+                      &times; {it.quantity}
+                    </span>
                   </span>
                   <span className="shrink-0 text-slate-600">
                     {formatPrice(it.unit_price * it.quantity)}
@@ -173,7 +188,9 @@ export default function OrdersPage() {
                     onClick={() => onMarkComplete(order.id)}
                     className="min-h-[40px] px-3 py-2 text-sm"
                   >
-                    {savingOrderId === order.id ? "Marking..." : "Mark Complete"}
+                    {savingOrderId === order.id
+                      ? "Marking..."
+                      : "Mark Complete"}
                   </Button>
                 ) : null}
               </div>

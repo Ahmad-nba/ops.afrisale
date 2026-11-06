@@ -57,7 +57,10 @@ function apiBase(): string {
 
 export type ApiOptions = Omit<RequestInit, "cache">;
 
-export async function callApi<T>(path: string, opts: ApiOptions = {}): Promise<T> {
+export async function callApi<T>(
+  path: string,
+  opts: ApiOptions = {},
+): Promise<T> {
   const token = getAuthToken();
   const headers = new Headers(opts.headers);
   headers.set("Accept", "application/json");
